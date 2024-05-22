@@ -38,7 +38,6 @@ async (req, res) => {
               return res.status(500).json({ error: "Database insert error" });
             }
 
-            // console.log(results);
             res.json({ message: "User created successfully!" });
           }
         );

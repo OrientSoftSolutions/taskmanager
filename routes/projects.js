@@ -7,7 +7,7 @@ const db = require("../config/db");
 router.post("/create", authenticateAdmin, (req, res) => {
     const query = "INSERT INTO projects (`name`) VALUES (?)"
     db.query(query,
-        [req.body.name],
+        [req.body.name, req.body.budget || "", req.body.deadline || ""],
         (error, results) => {
             if (error) {
                 console.log(error);
@@ -18,7 +18,6 @@ router.post("/create", authenticateAdmin, (req, res) => {
         }
     )
 })
-
 
 // Get all Projects
 router.get("/getprojects", authenticateAdminAndViewer, async (req, res) => {
@@ -36,14 +35,34 @@ router.get("/getprojects", authenticateAdminAndViewer, async (req, res) => {
     )
 })
 
+// Get active or non active Projects
+router.get("/filterprojects", authenticateAdminAndViewer, async (req, res) => {
+    const query = "SELECT * from projects where status = ?"
+    db.query(query,
+        [req.query.status],
+        (error, results) => {
+            if (error) {
+                console.log(error);
+                return res.json({ error: "Internal Server Error" })
+            }
+
+            res.json({ results })
+        }
+    )
+})
+
 // Update Project
 router.put("/update/:projectId", authenticateAdmin, (req, res) => {
     const projectId = req.params.projectId;
-    const newName = req.body.name;
+    const { name, budget, deadline } = req.body;
 
-    const query = "UPDATE projects SET name = ? WHERE id = ?";
+    if (name === undefined || budget === undefined || deadline === undefined) {
+        return res.status(400).json({ error: "All fields (name, budget, deadline) are required" });
+    }
+
+    const query = "UPDATE projects SET name = ?, budget = ?, deadline = ? WHERE id = ?";
     db.query(query,
-        [newName, projectId],
+        [name, budget, deadline, projectId],
         (error, results) => {
             if (error) {
                 console.error(error);
@@ -54,11 +73,10 @@ router.put("/update/:projectId", authenticateAdmin, (req, res) => {
                 return res.status(404).json({ error: "Project not found" });
             }
 
-            res.json({ message: "Project name updated successfully" });
+            res.json({ message: "Project updated successfully" });
         }
     );
 });
-
 
 // Ad Member to OSS projects
 router.post("/addpmembers", authenticateAdmin, async (req, res) => {
@@ -171,8 +189,6 @@ router.post("/createTask", authenticateAdmin, (req, res) => {
     });
 });
 
-
-
 // Change Task Status (done by normal membr)
 router.put("/changeTstatus/:taskId", authenticateUser, (req, res) => {
     const taskId = req.params.taskId;
@@ -248,7 +264,5 @@ router.put("/Tcomment/:taskId", authenticateUser, (req, res) => {
         );
     });
 });
-
-
 
 module.exports = router
