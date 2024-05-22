@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { authenticateAdmin, authenticateUser } = require("../middlewares/verify")
+const { authenticateAdmin, authenticateUser, authenticateAdminAndViewer } = require("../middlewares/verify")
 const db = require("../config/db");
 
 // CRUD PROJECT
@@ -15,6 +15,23 @@ router.post("/create", authenticateAdmin, (req, res) => {
             }
 
             res.json({ message: "Project Created!" })
+        }
+    )
+})
+
+
+// Get all Projects
+router.get("/getprojects", authenticateAdminAndViewer, async (req, res) => {
+    const query = "SELECT * from projects"
+    db.query(query,
+        [],
+        (error, results) => {
+            if (error) {
+                console.log(error);
+                return res.json({ error: "Internal Server Error" })
+            }
+
+            res.json({ results })
         }
     )
 })
@@ -84,7 +101,7 @@ router.delete("/removeMember/:projectId/:userId", authenticateAdmin, (req, res) 
 
 
 // Get project members
-router.get("/getprojectmembers", authenticateAdmin, async (req, res) => {
+router.get("/getprojectmembers", authenticateAdminAndViewer, async (req, res) => {
     try {
         const projectId = req.query.project_id;
         const query = `
@@ -122,7 +139,7 @@ router.post("/createTask", authenticateAdmin, (req, res) => {
             console.error(error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-        
+
         if (projectResults.length === 0) {
             return res.status(404).json({ error: "Project not found" });
         }
@@ -132,7 +149,7 @@ router.post("/createTask", authenticateAdmin, (req, res) => {
                 console.error(error);
                 return res.status(500).json({ error: "Internal Server Error" });
             }
-            
+
             if (userResults.length === 0) {
                 return res.status(404).json({ error: "Assigned user not found" });
             }
@@ -166,14 +183,14 @@ router.put("/changeTstatus/:taskId", authenticateUser, (req, res) => {
             console.error(error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
-        
+
         if (results.length === 0) {
             return res.status(404).json({ error: "Task not found or not assigned to the user" });
         }
 
         db.query(
             "UPDATE tasks SET status = ? WHERE id = ?",
-            [req.body.status,  taskId],
+            [req.body.status, taskId],
             (error, updateResults) => {
                 if (error) {
                     console.error(error);
@@ -185,6 +202,53 @@ router.put("/changeTstatus/:taskId", authenticateUser, (req, res) => {
         );
     });
 });
+
+// Comment on tasks
+router.put("/Tcomment/:taskId", authenticateUser, (req, res) => {
+    const taskId = req.params.taskId;
+    const userId = req.user.id;
+    const userName = req.user.username;
+    const newComment = {
+        user: userId,
+        userName: userName,
+        comment: req.body.comment,
+        timestamp: new Date().toISOString()
+    };
+
+    db.query("SELECT * FROM tasks WHERE id = ? AND assigned_to = ?", [taskId, userId], (error, results) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Task not found or not assigned to the user" });
+        }
+
+        let comments = results[0].comments || [];
+        if (typeof comments === 'string') {
+            comments = JSON.parse(comments);
+        }
+
+        comments.push(newComment);
+
+        db.query(
+            "UPDATE tasks SET comments = ? WHERE id = ?",
+            [JSON.stringify(comments), taskId],
+            (error, updateResults) => {
+                if (error) {
+                    console.error(error);
+                    return res.status(500).json({ error: "Internal Server Error" });
+                }
+
+                res.json({
+                    comments: comments
+                });
+            }
+        );
+    });
+});
+
 
 
 module.exports = router

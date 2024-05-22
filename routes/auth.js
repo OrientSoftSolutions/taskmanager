@@ -69,7 +69,8 @@ router.post("/login", async (req, res) => {
     const userdata = {
       user: {
         id: user.id,
-        username: user.email,
+        email: user.email,
+        username: user.username,
         role: user.role,
       },
     };
