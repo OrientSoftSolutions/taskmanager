@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { authenticateAdmin, authenticateUser, authenticateAdminAndViewer } = require("../middlewares/verify")
+const { authenticateAdmin, authenticateUser, authenticateAdminAndViewer, authenticateAllUser } = require("../middlewares/verify")
 const db = require("../config/db");
 
 // CRUD PROJECT
 router.post("/create", authenticateAdmin, (req, res) => {
-    const query = "INSERT INTO projects (`name`) VALUES (?)"
+    const query = "INSERT INTO projects (`name`, `budget`, `deadline`) VALUES (?, ?, ?)"
     db.query(query,
-        [req.body.name, req.body.budget || "", req.body.deadline || ""],
+        [req.body.name, req.body.budget ?  req.body.budget : "", req.body.deadline ? req.body.deadline : ""],
         (error, results) => {
             if (error) {
                 console.log(error);
@@ -20,10 +20,25 @@ router.post("/create", authenticateAdmin, (req, res) => {
 })
 
 // Get all Projects
-router.get("/getprojects", authenticateAdminAndViewer, async (req, res) => {
-    const query = "SELECT * from projects"
+router.get("/getprojects", authenticateAllUser, async (req, res) => {
+    let query;
+    let params = [];
+
+    if (req.user.role === 'admin' || req.user.role === 'viewer') {
+        query = "SELECT * FROM projects";
+    } else {
+        query = `
+            SELECT p.* 
+            FROM projects p
+            JOIN projects_members pm ON p.id = pm.project_id
+            WHERE pm.user_id = ?
+        `;
+        params = [req.user.id];
+    }
+
+
     db.query(query,
-        [],
+        params,
         (error, results) => {
             if (error) {
                 console.log(error);
@@ -216,6 +231,59 @@ router.put("/changeTstatus/:taskId", authenticateUser, (req, res) => {
                 res.json({ message: req.body.status === 0 ? "Task marked as incomplete" : "Task marked as complete" });
             }
         );
+    });
+});
+
+
+// Get All Tasks
+router.get("/tasks", authenticateAllUser, (req, res) => {
+    const today = req.query.date; // Get current date in YYYY-MM-DD format
+
+    let query = `
+        SELECT 
+            tasks.id AS task_id, tasks.description, tasks.deadline, tasks.status, 
+            projects.id AS project_id, projects.name AS project_name, 
+            users.id AS user_id, users.username AS user_username, users.email AS user_email, users.designation AS user_designation
+        FROM tasks
+        JOIN projects ON tasks.project_id = projects.id
+        JOIN users ON tasks.assigned_to = users.id
+        WHERE DATE(tasks.created_at) = ?
+    `;
+
+
+
+    let params = [today];
+    if (req.user.role === 'member') {
+        // Members can only see tasks assigned to them
+        query += ` AND tasks.assigned_to = ?`;
+        params = [today, req.user.id];
+    }
+
+    db.query(query, params, (error, results) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+
+
+        const tasks = results.map(row => ({
+            id: row.task_id,
+            description: row.description,
+            deadline: row.deadline,
+            status: row.status,
+            project: {
+                id: row.project_id,
+                name: row.project_name
+            },
+            assignedTo: {
+                id: row.user_id,
+                username: row.user_username,
+                email: row.user_email,
+                designation: row.user_designation
+            }
+        }));
+
+        res.json(tasks);
     });
 });
 

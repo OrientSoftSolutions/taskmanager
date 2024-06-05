@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { authenticateAdmin } = require("../middlewares/verify")
+const { authenticateAdmin, authenticateAdminAndViewer } = require("../middlewares/verify")
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
@@ -11,7 +11,7 @@ router.post("/create",
 authenticateAdmin, 
 async (req, res) => {
   try {
-    const { email, username, password, role } = req.body;
+    const { email, username, password, role, designation } = req.body;
 
     db.query(
       'SELECT * FROM users WHERE email = ?',
@@ -30,8 +30,8 @@ async (req, res) => {
         const securePassword = await bcrypt.hash(password, salt);
 
         db.query(
-          'INSERT INTO users (`email`, `username`, `password`, `role`) VALUES (?, ?, ?, ?)',
-          [email, username, securePassword, role],
+          'INSERT INTO users (`email`, `username`, `password`, `role`, `designation`) VALUES (?, ?, ?, ?, ?)',
+          [email, username, securePassword, role, designation],
           (error, results) => {
             if (error) {
               console.log(error);
@@ -87,5 +87,21 @@ router.post("/login", async (req, res) => {
     }
   });
 });
+
+
+router.get("/getmembers", authenticateAdminAndViewer, async (req, res) => {
+  // const query = "SELECT id, username, email, role  FROM users WHERE role IN ('member', 'viewer')";
+  const query = "SELECT id, username, email, role, designation  FROM users WHERE role IN ('member')";
+
+  
+  db.query(query, (error, results) => {
+      if (error) {
+          return res.status(500).json({ error: 'An error occurred while fetching members.' });
+      }
+      res.status(200).json(results);
+  });
+});
+
+
 
 module.exports = router
