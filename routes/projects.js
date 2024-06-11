@@ -7,7 +7,7 @@ const db = require("../config/db");
 router.post("/create", authenticateAdmin, (req, res) => {
     const query = "INSERT INTO projects (`name`, `budget`, `deadline`) VALUES (?, ?, ?)"
     db.query(query,
-        [req.body.name, req.body.budget ?  req.body.budget : "", req.body.deadline ? req.body.deadline : ""],
+        [req.body.name, req.body.budget ? req.body.budget : "", req.body.deadline ? req.body.deadline : ""],
         (error, results) => {
             if (error) {
                 console.log(error);
@@ -233,6 +233,120 @@ router.put("/changeTstatus/:taskId", authenticateUser, (req, res) => {
         );
     });
 });
+
+
+
+
+// Comment on Task
+router.post("/tasks/:taskId/comments", authenticateUser, (req, res) => {
+    const taskId = req.params.taskId;
+    const userId = req.user.id;
+    const { comment } = req.body;
+
+    if (!comment) {
+        return res.status(400).json({ error: "Comment is required" });
+    }
+
+    // Check if the user is the assigned user or an admin
+    db.query("SELECT * FROM tasks WHERE id = ?", [taskId], (error, taskResults) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+
+        if (taskResults.length === 0) {
+            return res.status(404).json({ error: "Task not found" });
+        }
+
+        const task = taskResults[0];
+
+        if (task.assigned_to === userId || req.user.role === 'admin') {
+            let comments = task.comments ? task.comments : [];
+
+            const newComment = {
+                userId,
+                comment,
+                createdAt: new Date().toISOString()
+            };
+
+            comments.push(newComment);
+
+            db.query(
+                "UPDATE tasks SET comments = ? WHERE id = ?",
+                [JSON.stringify(comments), taskId],
+                (error, updateResults) => {
+                    if (error) {
+                        console.error(error);
+                        return res.status(500).json({ error: "Internal Server Error" });
+                    }
+
+                    res.json({ message: "Comment added successfully", comments });
+                }
+            );
+        } else {
+            res.status(403).json({ error: "User not authorized to comment on this task" });
+        }
+    });
+});
+
+
+
+// Get Task comments
+router.get("/tasks/:taskId/comments", authenticateUser, (req, res) => {
+    const taskId = req.params.taskId;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    db.query("SELECT * FROM tasks WHERE id = ?", [taskId], (error, results) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Task not found" });
+        }
+
+        const task = results[0];
+
+        if (task.assigned_to !== userId && userRole !== 'admin') {
+            return res.status(403).json({ error: "User not authorized to view comments" });
+        }
+
+        const comments = task.comments ? task.comments : [];
+        res.json({ comments });
+    });
+});
+
+// Change Task deadline and desc
+router.put("/updateTask/:taskId", authenticateAdmin, (req, res) => {
+    const taskId = req.params.taskId;
+
+    db.query("SELECT * FROM tasks WHERE id = ?", [taskId], (error, results) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Task not found" });
+        }
+
+        db.query(
+            "UPDATE tasks SET description = ?, deadline = ? WHERE id = ?",
+            [req.body.description, req.body.deadline, taskId],
+            (error, updateResults) => {
+                if (error) {
+                    console.error(error);
+                    return res.status(500).json({ error: "Internal Server Error" });
+                }
+
+                res.json({ message: "UPDATED" });
+            }
+        );
+    });
+});
+
 
 
 // Get All Tasks

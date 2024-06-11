@@ -20,12 +20,9 @@ const AddUser = () => {
             values?.password?.length > 0
         ) {
             try {
-                await axios.post(import.meta.env.VITE_API_URL + "/api/auth/create", { ...values }, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${Cookies.get("token")}`,
-                    },
-                });
+                await axios.post(import.meta.env.VITE_API_URL + "/api/auth/create", { ...values },  
+                    { withCredentials: true }
+                );
                 alert("USER CREATED")
                 setValues({ username: "", email: "", designation: "", password: "", cpassword: "" })
             } catch (error) {

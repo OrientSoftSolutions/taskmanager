@@ -7,8 +7,7 @@ const secretKey = process.env.JWT_SECRET;
 
 // USer must be admin
 const authenticateAdmin = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
+  const token = req.cookies.token
   if (!token) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
@@ -31,8 +30,7 @@ const authenticateAdmin = (req, res, next) => {
 
 // User must be admin or viewer
 const authenticateAdminAndViewer = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
+  const token = req.cookies.token
   if (!token) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
@@ -54,8 +52,7 @@ const authenticateAdminAndViewer = (req, res, next) => {
 
 // Allow everyone except viewer
 const authenticateUser = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
+  const token = req.cookies.token
   if (!token) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
@@ -76,7 +73,7 @@ const authenticateUser = (req, res, next) => {
 
 
 const authenticateAllUser = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+  const token = req.cookies.token;
 
   if (!token) {
     return res.status(403).json({ message: 'Unauthorized' });
@@ -85,16 +82,14 @@ const authenticateAllUser = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, secretKey);
     req.user = decoded.user;
-    if (req.user.role !== 'member' && req.user.role !== 'admin' && req.user.role !== "viewer") {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-
     next();
   } catch (error) {
     console.error(error);
     res.status(403).json({ message: 'Unauthorized Catch' });
   }
 };
+
+
 
 module.exports = {
   authenticateUser, authenticateAdmin, authenticateAdminAndViewer, authenticateAllUser

@@ -10,29 +10,27 @@ function Sign_in() {
     const { user, setUser, setLoading } = useAuthContext();
     const navigate = useNavigate()
 
-
     const Login = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
         if (cred.email.length > 0 && cred.password.length > 0) {
-            setLoading(true)
+            setLoading(true);
             const { data } = await axios.post(import.meta.env.VITE_API_URL + "/api/auth/login", {
                 email: cred.email,
-                password: cred.password
-            })
-
+                password: cred.password,
+            } , { withCredentials: true });
 
             if (data.success) {
-                setUser(jwt_decode(data.authToken))
-                Cookies.set("token", data.authToken, { secure: true });
-                navigate("/")
+                const { data: userData } = await axios.get(import.meta.env.VITE_API_URL + "/api/auth/userinfo", { withCredentials: true });
+                setUser(userData);
+                navigate("/");
             } else {
-                alert(data.message)
+                alert(data.message);
             }
 
-            setLoading(false)
+            setLoading(false);
         } else {
-            setLoading(false)
-            alert("Please fill all fields")
+            setLoading(false);
+            alert("Please fill all fields");
         }
     };
 

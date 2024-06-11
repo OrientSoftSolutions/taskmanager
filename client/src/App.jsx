@@ -12,23 +12,28 @@ import Sign_in from './pages/Sign_in'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext'
 import AddUser from './pages/AddUser'
+import Preview from './pages/Preview'
 
 
 function App() {
-  const { user} = useAuthContext();
+  const { user } = useAuthContext();
 
   return (
     <>
-          <Routes>
-          {user ? <><Route path='/' element={<Dashboard  />}/>
-          <Route path='/project' element={<Project_page />}/>
+      <Routes>
+        {user ? <><Route path='/' element={<Dashboard />} />
+          <Route path='/project' element={<Project_page />} />
 
-          {user?.user?.role === 'admin' && <>
-          <Route path='/adduser' element={<AddUser />}/>
-          <Route path='/task' element={<Task />}/>
+          {user?.role === 'admin' && <>
+            <Route path='/adduser' element={<AddUser />} />
+            <Route path='/task' element={<Task />} />
           </>}
-          {(user.user.role=== 'admin' || user.user.role==='viewer' )&& <Route path='/report' element={<Report />}/>} </> :  <Route path='/' element={<Sign_in />}/>}    
-          </Routes>
+          {(user?.role === 'admin' || user?.role === 'viewer') && <>
+            <Route path='/report' element={<Report />} />
+            <Route path='/preview' element={<Preview />} />
+
+             </>} </> : <Route path='/' element={<Sign_in />} />}
+      </Routes>
     </>
   )
 }

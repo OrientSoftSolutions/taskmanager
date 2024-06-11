@@ -13,7 +13,7 @@ function Welcome() {
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-20">
           <div className="col-span-2">
             <div>
-              <h1 className="text-4xl font-bold">Welcome, {user.user.username}</h1>
+              <h1 className="text-4xl font-bold">Welcome, {user?.username}</h1>
               <p className="text-2xl  font-light">Here is your agenda for today</p>
             </div>
           </div>
@@ -29,7 +29,7 @@ function Welcome() {
           <div className="hidden lg:block col-span-1">
             <div className="relative">
               <img
-                src={profile}
+                src={"https://cdn.iconscout.com/icon/free/png-256/free-laptop-user-1-1179329.png?f=webp"}
                 alt="Profile"
                 className="rounded-full ml-20 w-12 h-12 object-cover"
               />
