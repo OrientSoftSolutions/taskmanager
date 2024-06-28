@@ -33,16 +33,17 @@ function Project() {
     }
   };
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      const { data } = await axios.get(import.meta.env.VITE_API_URL + "/api/projects/getprojects",  { withCredentials: true });
+  const fetchProjects = async () => {
+    const { data } = await axios.get(import.meta.env.VITE_API_URL + "/api/projects/getprojects",  { withCredentials: true });
 
-      setProjects(data.results);
-      if (user?.role === "admin" || user?.role === "viewer") {
-        const teamdata = await axios.get(import.meta.env.VITE_API_URL + "/api/auth/getmembers", { withCredentials: true });
-        setTeam(teamdata.data);
-      }
+    setProjects(data.results);
+    if (user?.role === "admin" || user?.role === "viewer") {
+      const teamdata = await axios.get(import.meta.env.VITE_API_URL + "/api/auth/getmembers", { withCredentials: true });
+      setTeam(teamdata.data);
     }
+  }
+
+  useEffect(() => {
     fetchProjects()
   }, [])
 
@@ -56,6 +57,7 @@ function Project() {
         axios.post(import.meta.env.VITE_API_URL + "/api/projects/create", { ...values }, { withCredentials: true });
 
         alert("PROJECT ADDED");
+        fetchProjects();
         setValues({ name: "", budget: "", deadline: "" })
         setShow(false)
       } catch (error) {

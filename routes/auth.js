@@ -80,46 +80,6 @@ router.post("/create",
     }
   });
 
-// router.post("/login", async (req, res) => {
-//   const email = req.body.email;
-//   const password = req.body.password;
-
-//   const q = "SELECT * FROM users WHERE email = ?";
-//   db.query(q, [email], async (err, data) => {
-//     if (err) return res.json(err);
-
-//     if (data.length === 0) {
-//       return res.json({ message: "Email not found" });
-//     }
-
-//     const user = data[0];
-
-//     const passwordCompare = await bcrypt.compare(password, user.password);
-
-//     const userdata = {
-//       user: {
-//         id: user.id,
-//         email: user.email,
-//         username: user.username,
-//         role: user.role,
-//       },
-//     };
-
-//     const authToken = jwt.sign(userdata, process.env.JWT_SECRET);
-
-//     if (passwordCompare) {
-//       return res.json({
-//         success: true,
-//         message: "Login successful",
-//         authToken: authToken,
-//       });
-//     } else {
-//       return res.json({ success: false, message: "Incorrect password" });
-//     }
-//   });
-// });
-
-
 
 // Login
 router.post('/login', async (req, res) => {
@@ -148,15 +108,14 @@ router.post('/login', async (req, res) => {
       };
 
       const authToken = jwt.sign(userdata, process.env.JWT_SECRET, {
-        expiresIn: '1h',
+        expiresIn: '24h',
       });
 
-      // Set the token in HTTP-only cookies
       res.cookie('token', authToken, {
         httpOnly: true,
-        secure: false, // Set to true if using HTTPS
+        secure: false, 
         sameSite: 'strict',
-        maxAge: 3600000, // 1 hour
+        maxAge: 86400000,
       });
 
       return res.json({
